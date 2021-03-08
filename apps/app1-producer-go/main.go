@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/Shopify/sarama"
+	"github.com/gin-gonic/gin"
 )
 
 var brokers = []string{"127.0.0.1:9092", "127.0.0.1:9093", "127.0.0.1:9094"}
@@ -46,5 +48,15 @@ func Publish(topic string, message string) {
 }
 
 func main() {
-	Publish("topicA", `{"topic":"topicA","message":"hello"}`)
+	router := gin.Default()
+
+	// This handler will match /user/john but will not match /user/ or /user
+	router.GET("app1/produce/:message", func(c *gin.Context) {
+		message := c.Param("message")
+		Publish("A", message)
+		c.String(http.StatusOK, "Published %s Topic A", message)
+	})
+
+	router.Run(":8081")
+
 }

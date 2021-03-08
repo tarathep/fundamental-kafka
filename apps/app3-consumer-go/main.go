@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -17,15 +18,24 @@ var (
 	brokers  = []string{"127.0.0.1:9092", "127.0.0.1:9093", "127.0.0.1:9094"}
 	version  = "2.1.1"
 	group    = "consumer-group-1"
-	topics   = "topicA"
+	topics   = "A"
 	assignor = "roundrobin"
 
-	oldest = true
+	oldest = false
 	//logging
 	verbose = false
 )
 
 func main() {
+	//WRITE LOG FILE
+	f, err := os.OpenFile("message.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
+
+	log.SetOutput(f)
+
 	log.Println("Starting a new Sarama consumer")
 
 	if verbose {
@@ -56,9 +66,9 @@ func main() {
 	}
 
 	if oldest {
+		//sarama.OffsetNewest
 		config.Consumer.Offsets.Initial = sarama.OffsetOldest
 	}
-
 	/**
 	 * Setup a new Sarama consumer group
 	 */
@@ -134,7 +144,8 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 	// The `ConsumeClaim` itself is called within a goroutine, see:
 	// https://github.com/Shopify/sarama/blob/master/consumer_group.go#L27-L29
 	for message := range claim.Messages() {
-		log.Printf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
+		log.Printf("Received Message : %s, topic = %s", string(message.Value), message.Topic)
+		fmt.Printf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
 		session.MarkMessage(message, "")
 	}
 
